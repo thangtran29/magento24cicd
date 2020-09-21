@@ -1,0 +1,82 @@
+version: 2
+jobs: # a collection of steps
+  build:
+    docker: # run the steps with Docker
+      - image: getpagespeed/m2builder:latest
+    working_directory: /sources # directory where steps will run
+    steps: # a set of executable commands
+      - checkout
+      - run:
+          name: "Install Mage Composer keys"
+          command: composer global config http-basic.repo.magento.com $MAGENTO_KEY_PUBLIC $MAGENTO_KEY_PRIVATE
+      - run:
+          name: "Install Plumrocket composer keys"
+          command: composer global config http-basic.store.plumrocket.com $PLUMROCKET_KEY_PUBLIC $PLUMROCKET_KEY_PRIVATE
+      - run:
+          name: "Install composer cache"
+          command: ./extract-composer-cache.sh
+      - run:
+          name: "Install Magento plugin dependencies (vendor)"
+          command: composer install
+      - run:
+          name: "Compile PHP stuff (generated)"
+          command: php -d memory_limit=-1 bin/magento setup:di:compile
+      - run:
+          name: "Compile static (pub/static)"
+          command: php -d memory_limit=-1 bin/magento setup:static-content:deploy -f en_US
+      - persist_to_workspace:
+          root: /sources
+          paths:
+            - "vendor" 
+            - "generated"
+            - "pub/static"
+            - "var/view_preprocessed"
+  deploy:
+    docker: # run the steps with Docker
+      - image: getpagespeed/m2builder:latest
+    working_directory: /sources
+    steps:
+      - attach_workspace:
+          at: /sources
+      - add_ssh_keys:
+          fingerprints:
+            - "e2:65:63:c0:04:b6:82:f0:23:f3:d3:8e:9d:06:3f:fd"
+      - run:
+          name: "Copy generated transient files to shadow directory"
+          command: rsync -e "ssh -p 22 -o StrictHostKeyChecking=no" -avz --delete --exclude=/.gitkeep ./ live-user@m2.example.com:/srv/www/example.com/.shadow/
+    - run:
+        name: "Deploy run: maintenance mode + git pull + overwrite compiled files + upgrade data + cache clear + maintenance off"
+        command: ssh -v -o StrictHostKeyChecking=no staging@m2.example.com "/srv/www/example.com/deploy.sh"
+  deploy-staging:
+    docker: # run the steps with Docker
+    - image: getpagespeed/m2builder:latest
+    working_directory: /sources
+    steps:
+    - attach_workspace:
+        at: /sources
+    - add_ssh_keys:
+        fingerprints:
+        - "7b:72:9c:aa:85:52:3f:77:55:24:5b:db:c9:98:50:df"
+    - run:
+        name: "Copy generated transient files to shadow sub directory"
+        command: rsync -e "ssh -p 22 -o StrictHostKeyChecking=no" -avz --delete --exclude=/.gitkeep ./ staging@m2.example.com:/srv/www/staging.example.com/.shadow/
+    - run:
+        name: "Deploy run: maintenance mode + git pull + overwrite compiled files + upgrade data + cache clear + maintenance off"
+        command: ssh -v -o StrictHostKeyChecking=no staging@m2.example.com "/srv/www/staging.example.com/deploy.sh"
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - build
+      - deploy:
+          requires:
+            - build
+          filters:   
+            branches:
+              only: master
+      - deploy-staging:
+          requires:
+          - build
+          filters:
+            branches:
+              only: staging
