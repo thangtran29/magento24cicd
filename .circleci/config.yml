@@ -38,15 +38,15 @@ jobs: # a collection of steps
     steps:
       - attach_workspace:
           at: /sources
-      #- add_ssh_keys:
-      #    fingerprints:
-      #      - "e2:65:63:c0:04:b6:82:f0:23:f3:d3:8e:9d:06:3f:fd"
+      - add_ssh_keys:
+          fingerprints:
+            - "e2:65:63:c0:04:b6:82:f0:23:f3:d3:8e:9d:06:3f:fd"
       - run:
           name: "Copy generated transient files to shadow directory"
           command: rsync -e "ssh -p 22 -o StrictHostKeyChecking=no" -avz --delete --exclude=/.gitkeep ./ live-user@m2.example.com:/srv/www/example.com/.shadow/
       - run:
-        name: "Deploy run: maintenance mode + git pull + overwrite compiled files + upgrade data + cache clear + maintenance off"
-        command: ssh -v -o StrictHostKeyChecking=no staging@m2.example.com "/srv/www/example.com/deploy.sh"
+          name: "Deploy run: maintenance mode + git pull + overwrite compiled files + upgrade data + cache clear + maintenance off"
+          command: ssh -v -o StrictHostKeyChecking=no staging@m2.example.com "/srv/www/example.com/deploy.sh"
   deploy-staging:
     docker: # run the steps with Docker
     - image: getpagespeed/m2builder:latest
