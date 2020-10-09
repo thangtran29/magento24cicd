@@ -6,18 +6,18 @@ jobs: # a collection of steps
     working_directory: /sources # directory where steps will run
     steps: # a set of executable commands
       - checkout
-      - run:
-          name: "Install Mage Composer keys"
-          command: composer global config http-basic.repo.magento.com $MAGENTO_KEY_PUBLIC $MAGENTO_KEY_PRIVATE
-      - run:
-          name: "Install Plumrocket composer keys"
-          command: composer global config http-basic.store.plumrocket.com $PLUMROCKET_KEY_PUBLIC $PLUMROCKET_KEY_PRIVATE
-      - run:
-          name: "Install composer cache"
-          command: ./extract-composer-cache.sh
-      - run:
-          name: "Install Magento plugin dependencies (vendor)"
-          command: composer install
+      #- run:
+      #    name: "Install Mage Composer keys"
+      #    command: composer global config http-basic.repo.magento.com $MAGENTO_KEY_PUBLIC $MAGENTO_KEY_PRIVATE
+      #- run:
+      #    name: "Install Plumrocket composer keys"
+      #    command: composer global config http-basic.store.plumrocket.com $PLUMROCKET_KEY_PUBLIC $PLUMROCKET_KEY_PRIVATE
+      #- run:
+      #    name: "Install composer cache"
+      #    command: ./extract-composer-cache.sh
+      #- run:
+      #    name: "Install Magento plugin dependencies (vendor)"
+      #    command: composer install
       - run:
           name: "Compile PHP stuff (generated)"
           command: php -d memory_limit=-1 bin/magento setup:di:compile
@@ -52,7 +52,7 @@ jobs: # a collection of steps
     - image: getpagespeed/m2builder:latest
     working_directory: /sources
     steps:
-    - attach_workspace:
+    - attach_workspace:	
         at: /sources
     - add_ssh_keys:
         fingerprints:
