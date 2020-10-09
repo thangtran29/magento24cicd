@@ -52,7 +52,7 @@ jobs: # a collection of steps
     - image: getpagespeed/m2builder:latest
     working_directory: /sources
     steps:
-    - attach_workspace:	
+    - attach_workspace:
         at: /sources
     - add_ssh_keys:
         fingerprints:
